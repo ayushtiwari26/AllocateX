@@ -18,6 +18,7 @@ export interface Task {
 export interface TeamMember {
   id: string;
   name: string;
+  role: string;
   avatar: string;
   skills: SkillTag[];
   currentWorkload: number; // hours
@@ -38,6 +39,7 @@ export interface Project {
   id: string;
   name: string;
   teams: Team[];
+  requirements?: { role: string; count: number }[];
 }
 
 export interface AIMatch {

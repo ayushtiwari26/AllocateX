@@ -72,6 +72,7 @@ export const mockMembers: TeamMember[] = [
   {
     id: 'member-1',
     name: 'Sarah Chen',
+    role: 'Senior Frontend Engineer',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&q=80',
     skills: ['React', 'TypeScript', 'UI/UX', 'Testing'],
     currentWorkload: 25,
@@ -83,6 +84,7 @@ export const mockMembers: TeamMember[] = [
   {
     id: 'member-2',
     name: 'Marcus Johnson',
+    role: 'Backend Lead',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80',
     skills: ['Node.js', 'PostgreSQL', 'GraphQL', 'AWS'],
     currentWorkload: 38,
@@ -94,6 +96,7 @@ export const mockMembers: TeamMember[] = [
   {
     id: 'member-3',
     name: 'Emily Rodriguez',
+    role: 'Full Stack Developer',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&q=80',
     skills: ['React', 'TypeScript', 'Node.js', 'MongoDB'],
     currentWorkload: 42,
@@ -105,6 +108,7 @@ export const mockMembers: TeamMember[] = [
   {
     id: 'member-4',
     name: 'David Kim',
+    role: 'DevOps Engineer',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&q=80',
     skills: ['DevOps', 'Docker', 'AWS', 'Python'],
     currentWorkload: 20,
@@ -116,6 +120,7 @@ export const mockMembers: TeamMember[] = [
   {
     id: 'member-5',
     name: 'Aisha Patel',
+    role: 'UI Designer',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80',
     skills: ['UI/UX', 'React', 'TypeScript', 'Testing'],
     currentWorkload: 15,
@@ -127,6 +132,7 @@ export const mockMembers: TeamMember[] = [
   {
     id: 'member-6',
     name: 'James Wilson',
+    role: 'Backend Engineer',
     avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&q=80',
     skills: ['PostgreSQL', 'Node.js', 'Python', 'AWS'],
     currentWorkload: 32,

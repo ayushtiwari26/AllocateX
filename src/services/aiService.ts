@@ -1,13 +1,18 @@
-import { Task, TeamMember, AIMatch } from '@/types/allocation';
+import { Task, TeamMember, AIMatch, Project } from '@/types/allocation';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+// Initialize SDK
+// Use gemini-1.5-flash as it is the standard stable model for free tier
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }) : null;
 
 export async function getAITaskAssignment(
   task: Task,
   availableMembers: TeamMember[]
 ): Promise<AIMatch[]> {
-  if (!GEMINI_API_KEY) {
+  if (!model) {
     console.warn('Gemini API key not configured, using fallback matching');
     return getFallbackMatches(task, availableMembers);
   }
@@ -50,41 +55,15 @@ Respond in JSON format:
   ]
 }`;
 
-    const response = await fetch(GEMINI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-      }),
-    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const aiResponse = response.text();
 
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
-    }
+    if (!aiResponse) throw new Error('Invalid AI response');
 
-    const data = await response.json();
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!aiResponse) {
-      throw new Error('Invalid AI response');
-    }
-
-    // Parse JSON from AI response
+    // Parse JSON
     const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Could not parse AI response');
-    }
+    if (!jsonMatch) throw new Error('Could not parse AI response');
 
     const parsed = JSON.parse(jsonMatch[0]);
     return parsed.matches || [];
@@ -94,7 +73,7 @@ Respond in JSON format:
   }
 }
 
-// Fallback matching algorithm when AI is unavailable
+// Fallback matching algorithm
 function getFallbackMatches(task: Task, members: TeamMember[]): AIMatch[] {
   const scored = members.map((member) => {
     // Calculate skill match
@@ -116,15 +95,9 @@ function getFallbackMatches(task: Task, members: TeamMember[]): AIMatch[] {
 
     // Identify conflicts
     const conflicts: string[] = [];
-    if (!hasCapacity) {
-      conflicts.push('Would exceed capacity');
-    }
-    if (member.availability === 'overloaded') {
-      conflicts.push('Currently overloaded');
-    }
-    if (skillScore < 0.5) {
-      conflicts.push('Missing some required skills');
-    }
+    if (!hasCapacity) conflicts.push('Would exceed capacity');
+    if (member.availability === 'overloaded') conflicts.push('Currently overloaded');
+    if (skillScore < 0.5) conflicts.push('Missing some required skills');
 
     return {
       memberId: member.id,
@@ -134,10 +107,7 @@ function getFallbackMatches(task: Task, members: TeamMember[]): AIMatch[] {
     };
   });
 
-  // Sort by confidence score and return top 3
-  return scored
-    .sort((a, b) => b.confidenceScore - a.confidenceScore)
-    .slice(0, 3);
+  return scored.sort((a, b) => b.confidenceScore - a.confidenceScore).slice(0, 3);
 }
 
 export async function explainAssignment(
@@ -145,8 +115,8 @@ export async function explainAssignment(
   member: TeamMember,
   matchScore: number
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    return `${member.name} was assigned to "${task.title}" with a ${Math.round(matchScore * 100)}% match score based on skills and availability.`;
+  if (!model) {
+    return `${member.name} was assigned to "${task.title}" with a ${Math.round(matchScore * 100)}% match score.`;
   }
 
   try {
@@ -157,29 +127,87 @@ Member has: ${member.skills.join(', ')}
 Match score: ${Math.round(matchScore * 100)}%
 Current workload: ${member.currentWorkload}h / ${member.maxCapacity}h`;
 
-    const response = await fetch(GEMINI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-      }),
-    });
-
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Assignment completed successfully.';
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    return text || 'Assignment completed successfully.';
   } catch (error) {
     console.error('AI explanation error:', error);
     return `${member.name} was assigned to "${task.title}" with a ${Math.round(matchScore * 100)}% match score.`;
+  }
+}
+
+export type AIAction =
+  | { type: 'create_project'; data: { name: string; requirements: { role: string; count: number }[] } }
+  | { type: 'add_member'; data: { name: string; role: string; skills: string[]; teamName?: string; projectName?: string } }
+  | { type: 'assign_member'; data: { memberName: string; projectName: string; teamName?: string } }
+  | { type: 'unknown'; message: string };
+
+export async function parseNaturalLanguageAction(
+  input: string,
+  context: { projects: Project[]; members: TeamMember[] }
+): Promise<AIAction> {
+  if (!model) {
+    return { type: 'unknown', message: 'AI not configured (Missing Key)' };
+  }
+
+  const projectNames = context.projects.map(p => p.name).join(', ');
+  const memberNames = context.members.map(m => m.name).join(', ');
+  const validRoles = ['Senior Frontend Engineer', 'Backend Engineer', 'Product Manager', 'UI Designer', 'DevOps Engineer'].join(', ');
+
+  const prompt = `You are an AI assistant for a Resource Allocation system. 
+  Parse the user's natural language input into a structured JSON action.
+  
+  Context:
+  - Existing Projects: ${projectNames}
+  - Existing Members: ${memberNames}
+  - Valid Roles: ${validRoles}
+
+  User Input: "${input}"
+
+  Return ONLY JSON.
+  
+  Schemas:
+  1. Create Project: { "type": "create_project", "data": { "name": "Project Name", "requirements": [{ "role": "Role Name", "count": 1 }] } }
+  2. Add Member to Pool/Team: { "type": "add_member", "data": { "name": "Member Name", "role": "Role Name", "skills": ["Skill1", "Skill2"], "projectName": "Optional Target Project", "teamName": "Optional Target Team" } }
+  3. Assign/Move Member: { "type": "assign_member", "data": { "memberName": "Existing Member Name", "projectName": "Target Project", "teamName": "Target Team" } }
+  
+  If unclear, return { "type": "unknown", "message": "Clarification needed..." }
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { type: 'unknown', message: 'Failed to parse AI response' };
+
+    return JSON.parse(jsonMatch[0]) as AIAction;
+  } catch (error) {
+    console.error('AI Parse Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { type: 'unknown', message: `AI Error: ${errorMessage}` };
+  }
+}
+
+export async function generateProjectReportSummary(project: Project): Promise<string> {
+  if (!model) return `Report for ${project.name} generated successfully.`;
+
+  const totalMembers = project.teams.reduce((acc, t) => acc + t.members.length, 0);
+  const roles = project.teams.flatMap(t => t.members.map(m => m.role));
+  const roleCounts = roles.reduce((acc, r) => ({ ...acc, [r]: (acc[r] || 0) + 1 }), {} as Record<string, number>);
+
+  const prompt = `Generate a professional executive summary (max 100 words) for a project report.
+    Project: ${project.name}
+    Total Members: ${totalMembers}
+    Composition: ${JSON.stringify(roleCounts)}
+    Status: Active
+    
+    Highlight the team composition and readiness.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  } catch (e) {
+    return 'Summary not available.';
   }
 }
