@@ -2,6 +2,10 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Employee, EmployeeSkill, User, LeaveBalance, EmployeeFinance, TeamMember, Team, Project } from '../models';
 import { Op } from 'sequelize';
+import { randomUUID } from 'crypto';
+
+// Generate a reasonably unique employee code; fallback if none provided
+const generateEmployeeCode = () => `EMP-${Math.floor(10000 + Math.random() * 90000)}`;
 
 export const getAllEmployees = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -92,29 +96,74 @@ export const createEmployee = async (req: AuthRequest, res: Response): Promise<v
       email,
       phone,
       dateOfJoining,
+      joiningDate,
       designation,
       department,
       reportingManagerId,
       currentWorkload,
       maxCapacity,
       velocity,
+      skills,
     } = req.body;
 
-    // Check if employee code already exists
-    const existing = await Employee.findOne({ where: { employeeCode } });
-    if (existing) {
-      res.status(400).json({ error: 'Employee code already exists' });
+    if (!firstName || !lastName || !email || !designation || !department) {
+      res.status(400).json({ error: 'Missing required fields (firstName, lastName, email, designation, department)' });
       return;
     }
 
+    // Resolve a user record: reuse existing by email or create a local stub if not provided
+    let resolvedUserId = userId;
+    let resolvedUser = null;
+
+    if (resolvedUserId) {
+      resolvedUser = await User.findByPk(resolvedUserId);
+      if (!resolvedUser) {
+        res.status(400).json({ error: 'Provided userId not found' });
+        return;
+      }
+    } else {
+      resolvedUser = await User.findOne({ where: { email } });
+      if (!resolvedUser) {
+        resolvedUser = await User.create({
+          firebaseUid: `local-${randomUUID()}`,
+          email,
+          displayName: `${firstName} ${lastName}`.trim(),
+          role: 'employee',
+          organizationId: null,
+        });
+      }
+      resolvedUserId = resolvedUser.id;
+    }
+
+    // Normalize dates and codes
+    const normalizedJoinDate = dateOfJoining || joiningDate || new Date().toISOString();
+
+    // Ensure unique/available employee code
+    let finalEmployeeCode = employeeCode || generateEmployeeCode();
+    if (employeeCode) {
+      const existing = await Employee.findOne({ where: { employeeCode } });
+      if (existing) {
+        res.status(400).json({ error: 'Employee code already exists' });
+        return;
+      }
+    } else {
+      // simple retry loop to avoid rare collision
+      for (let i = 0; i < 3; i++) {
+        const collision = await Employee.findOne({ where: { employeeCode: finalEmployeeCode } });
+        if (!collision) break;
+        finalEmployeeCode = generateEmployeeCode();
+      }
+    }
+
+    // Check if employee code already exists
     const employee = await Employee.create({
-      userId,
-      employeeCode,
+      userId: resolvedUserId,
+      employeeCode: finalEmployeeCode,
       firstName,
       lastName,
       email,
       phone,
-      dateOfJoining,
+      dateOfJoining: normalizedJoinDate,
       designation,
       department,
       reportingManagerId,
@@ -126,14 +175,38 @@ export const createEmployee = async (req: AuthRequest, res: Response): Promise<v
     });
 
     // Create initial leave balance for current year
+    const year = new Date(normalizedJoinDate).getFullYear();
     await LeaveBalance.create({
       employeeId: employee.id,
-      year: new Date().getFullYear(),
+      year,
       casualLeave: 12,
       sickLeave: 12,
       earnedLeave: 15,
       unpaidLeave: 0,
     });
+
+    // Optionally persist skills if provided as array of strings/objects
+    if (Array.isArray(skills) && skills.length) {
+      const normalizedSkills = skills.map((skill: any) => {
+        if (typeof skill === 'string') {
+          return { skillName: skill, proficiency: 'intermediate', yearsOfExperience: 1 };
+        }
+        return {
+          skillName: skill.skillName || skill.name,
+          proficiency: skill.proficiency || 'intermediate',
+          yearsOfExperience: skill.yearsOfExperience || skill.experience || 1,
+        };
+      }).filter((s: any) => s.skillName);
+
+      if (normalizedSkills.length) {
+        await EmployeeSkill.bulkCreate(normalizedSkills.map((s: any) => ({
+          employeeId: employee.id,
+          skillName: s.skillName,
+          proficiency: s.proficiency,
+          yearsOfExperience: s.yearsOfExperience,
+        })));
+      }
+    }
 
     res.status(201).json({ message: 'Employee created successfully', employee });
   } catch (error) {
