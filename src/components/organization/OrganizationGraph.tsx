@@ -264,6 +264,7 @@ export default function OrganizationGraph() {
     const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
     const [zoom, setZoom] = useState(1);
     const containerRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -407,6 +408,73 @@ export default function OrganizationGraph() {
             return e.reportingManagerId && !employees.some(emp => emp.reportingManagerId === e.id);
         }).length,
     };
+
+    // Zoom utilities
+    const MIN_ZOOM = 0.4;
+    const MAX_ZOOM = 2.5;
+
+    const clampZoom = (v: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, v));
+
+    const fitToScreen = () => {
+        const container = containerRef.current;
+        const content = contentRef.current;
+        if (!container || !content) return;
+
+        // natural content size (unscaled)
+        const contentW = content.scrollWidth;
+        const contentH = content.scrollHeight;
+
+        const availableW = container.clientWidth - 32; // some padding
+        const availableH = container.clientHeight - 32;
+
+        if (contentW === 0 || contentH === 0) {
+            setZoom(1);
+            return;
+        }
+
+        const scaleW = availableW / contentW;
+        const scaleH = availableH / contentH;
+        const target = clampZoom(Math.min(scaleW, scaleH, 1.0));
+        setZoom(target);
+
+        // center content after a tick
+        requestAnimationFrame(() => {
+            // scaled sizes
+            const scaledW = contentW * target;
+            const scaledH = contentH * target;
+            container.scrollLeft = Math.max(0, (scaledW - container.clientWidth) / 2);
+            container.scrollTop = Math.max(0, (scaledH - container.clientHeight) / 2);
+        });
+    };
+
+    // Wheel zoom (Ctrl + wheel) for desktop
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const onWheel = (e: WheelEvent) => {
+            // Only zoom when ctrlKey or metaKey is pressed to avoid interfering with scroll
+            if (!e.ctrlKey && !e.metaKey) return;
+            e.preventDefault();
+            const delta = -e.deltaY;
+            const step = 0.0015 * Math.abs(delta) + 0.05;
+            const newZoom = clampZoom(zoom + (delta > 0 ? step : -step));
+            setZoom(newZoom);
+
+            // center after zoom
+            requestAnimationFrame(() => {
+                const content = contentRef.current;
+                if (!content) return;
+                const scaledW = content.scrollWidth * newZoom;
+                const scaledH = content.scrollHeight * newZoom;
+                container.scrollLeft = Math.max(0, (scaledW - container.clientWidth) / 2);
+                container.scrollTop = Math.max(0, (scaledH - container.clientHeight) / 2);
+            });
+        };
+
+        container.addEventListener('wheel', onWheel, { passive: false });
+        return () => container.removeEventListener('wheel', onWheel);
+    }, [zoom]);
 
     return (
         <DndContext
@@ -568,7 +636,7 @@ export default function OrganizationGraph() {
                             className="min-h-full p-8 md:p-12"
                             style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
                         >
-                            <div className="flex flex-col items-center min-w-max">
+                            <div ref={contentRef} className="flex flex-col items-center min-w-max">
                                 {/* Company Name Header */}
                                 <div className="mb-8 text-center">
                                     <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-2xl shadow-xl shadow-indigo-200/50">
