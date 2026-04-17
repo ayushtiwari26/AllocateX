@@ -62,15 +62,15 @@ interface Employee {
 
 // ---------- Role tiers (same scheme as EmployeeList) ---------------------
 const TIERS = [
-    { label: 'Tech Consultant',     rank: 100, icon: Crown,      gradient: 'from-amber-400 to-orange-500',   ring: 'ring-amber-300',  glow: 'shadow-amber-200',  match: (t: string) => /tech consultant|consultant/i.test(t) },
-    { label: 'Tech Lead',           rank: 90,  icon: Crown,      gradient: 'from-violet-500 to-fuchsia-600', ring: 'ring-violet-300', glow: 'shadow-violet-200', match: (t: string) => /tech lead|team lead/i.test(t) },
-    { label: 'Senior',              rank: 80,  icon: Star,       gradient: 'from-indigo-500 to-blue-600',    ring: 'ring-indigo-300', glow: 'shadow-indigo-200', match: (t: string) => /senior|sde\s*[-\s]?(ii|2)/i.test(t) },
-    { label: 'Engineer',            rank: 70,  icon: Briefcase,  gradient: 'from-sky-500 to-cyan-600',       ring: 'ring-sky-300',    glow: 'shadow-sky-200',    match: (t: string) => /sde|software development engineer|front-?end|devops/i.test(t) },
-    { label: 'Business Analyst',    rank: 60,  icon: TrendingUp, gradient: 'from-emerald-500 to-teal-600',   ring: 'ring-emerald-300',glow: 'shadow-emerald-200',match: (t: string) => /business analyst/i.test(t) },
-    { label: 'QA',                  rank: 55,  icon: Briefcase,  gradient: 'from-rose-500 to-pink-600',      ring: 'ring-rose-300',   glow: 'shadow-rose-200',   match: (t: string) => /qa|test engineer/i.test(t) },
-    { label: 'Designer',            rank: 50,  icon: Sparkles,   gradient: 'from-pink-500 to-rose-600',      ring: 'ring-pink-300',   glow: 'shadow-pink-200',   match: (t: string) => /ui|ux|designer/i.test(t) },
-    { label: 'Support',             rank: 30,  icon: Users,      gradient: 'from-slate-500 to-slate-700',    ring: 'ring-slate-300',  glow: 'shadow-slate-200',  match: (t: string) => /support|ticketing/i.test(t) },
-    { label: 'Team',                rank: 0,   icon: Users,      gradient: 'from-slate-400 to-slate-500',    ring: 'ring-slate-300',  glow: 'shadow-slate-200',  match: () => true },
+    { label: 'Tech Consultant', rank: 100, icon: Crown, gradient: 'from-amber-400 to-orange-500', ring: 'ring-amber-300', glow: 'shadow-amber-200', match: (t: string) => /tech consultant|consultant/i.test(t) },
+    { label: 'Tech Lead', rank: 90, icon: Crown, gradient: 'from-violet-500 to-fuchsia-600', ring: 'ring-violet-300', glow: 'shadow-violet-200', match: (t: string) => /tech lead|team lead/i.test(t) },
+    { label: 'Senior', rank: 80, icon: Star, gradient: 'from-indigo-500 to-blue-600', ring: 'ring-indigo-300', glow: 'shadow-indigo-200', match: (t: string) => /senior|sde\s*[-\s]?(ii|2)/i.test(t) },
+    { label: 'Engineer', rank: 70, icon: Briefcase, gradient: 'from-sky-500 to-cyan-600', ring: 'ring-sky-300', glow: 'shadow-sky-200', match: (t: string) => /sde|software development engineer|front-?end|devops/i.test(t) },
+    { label: 'Business Analyst', rank: 60, icon: TrendingUp, gradient: 'from-emerald-500 to-teal-600', ring: 'ring-emerald-300', glow: 'shadow-emerald-200', match: (t: string) => /business analyst/i.test(t) },
+    { label: 'QA', rank: 55, icon: Briefcase, gradient: 'from-rose-500 to-pink-600', ring: 'ring-rose-300', glow: 'shadow-rose-200', match: (t: string) => /qa|test engineer/i.test(t) },
+    { label: 'Designer', rank: 50, icon: Sparkles, gradient: 'from-pink-500 to-rose-600', ring: 'ring-pink-300', glow: 'shadow-pink-200', match: (t: string) => /ui|ux|designer/i.test(t) },
+    { label: 'Support', rank: 30, icon: Users, gradient: 'from-slate-500 to-slate-700', ring: 'ring-slate-300', glow: 'shadow-slate-200', match: (t: string) => /support|ticketing/i.test(t) },
+    { label: 'Team', rank: 0, icon: Users, gradient: 'from-slate-400 to-slate-500', ring: 'ring-slate-300', glow: 'shadow-slate-200', match: () => true },
 ] as const;
 
 const tierFor = (designation: string) => TIERS.find(t => t.match(designation)) ?? TIERS[TIERS.length - 1];
