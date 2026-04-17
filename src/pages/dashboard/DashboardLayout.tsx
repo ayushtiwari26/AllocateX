@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { LayoutDashboard, Users, FolderOpen, Settings, LogOut, FileBarChart, GitBranch, MessageSquare, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, FolderOpen, Settings, LogOut, FileBarChart, GitBranch, MessageSquare, Menu, X, UsersRound } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function DashboardLayout() {
@@ -75,6 +75,7 @@ export default function DashboardLayout() {
                     <NavItem to="/dashboard/employees" icon={<Users size={20} />} label="Employees" active={isActive('/dashboard/employees')} onClick={closeSidebar} />
                     <NavItem to="/dashboard/projects" icon={<FolderOpen size={20} />} label="Projects" active={isActive('/dashboard/projects')} onClick={closeSidebar} />
                     <NavItem to="/dashboard/organization" icon={<GitBranch size={20} />} label="Organization" active={isActive('/dashboard/organization')} onClick={closeSidebar} />
+                    <NavItem to="/dashboard/teams" icon={<UsersRound size={20} />} label="Squads" active={isActive('/dashboard/teams')} onClick={closeSidebar} />
                     <NavItem to="/dashboard/allocation" icon={<Settings size={20} />} label="Resource Allocation" active={isActive('/dashboard/allocation')} onClick={closeSidebar} />
                     <NavItem to="/dashboard/ai-reports" icon={<FileBarChart size={20} />} label="AI Reports" active={isActive('/dashboard/ai-reports')} onClick={closeSidebar} />
                     <NavItem to="/dashboard/chat" icon={<MessageSquare size={20} />} label="AI Chat" active={isActive('/dashboard/chat')} onClick={closeSidebar} />

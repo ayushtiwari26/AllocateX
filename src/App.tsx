@@ -17,6 +17,7 @@ import CreateProject from './pages/dashboard/CreateProject';
 import Settings from './pages/dashboard/Settings';
 import AllocationReports from './pages/dashboard/AllocationReports';
 import OrganizationPage from './pages/dashboard/Organization';
+import TeamsList from './pages/dashboard/TeamsList';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -48,6 +49,7 @@ function AppContent() {
           <Route path="ai-reports" element={<AllocationReports />} />
           <Route path="ai-reports/:reportId" element={<AllocationReports />} />
           <Route path="organization" element={<OrganizationPage />} />
+          <Route path="teams" element={<TeamsList />} />
           <Route path="chat" element={<div className="h-full bg-gray-100 p-8 flex items-center justify-center"><ChatScreen /></div>} />
           <Route path="settings" element={<Settings />} />
         </Route>
