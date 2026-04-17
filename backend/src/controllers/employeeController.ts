@@ -1,0 +1,269 @@
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth';
+import { Employee, EmployeeSkill, User, LeaveBalance, EmployeeFinance, TeamMember, Team, Project } from '../models';
+import { Op } from 'sequelize';
+
+export const getAllEmployees = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { search, department, availability, isActive } = req.query;
+
+    const where: any = {};
+
+    if (search) {
+      where[Op.or] = [
+        { firstName: { [Op.iLike]: `%${search}%` } },
+        { lastName: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+        { employeeCode: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
+    if (department) where.department = department;
+    if (availability) where.availability = availability;
+    if (isActive !== undefined) where.isActive = isActive === 'true';
+
+    const employees = await Employee.findAll({
+      where,
+      include: [
+        { model: User, as: 'user', attributes: ['email', 'displayName', 'role'] },
+        { model: EmployeeSkill, as: 'skills' },
+        { model: LeaveBalance, as: 'leaveBalance' },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.json({ employees, total: employees.length });
+  } catch (error) {
+    console.error('Get all employees error:', error);
+    res.status(500).json({ error: 'Failed to fetch employees' });
+  }
+};
+
+export const getEmployeeById = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const employee = await Employee.findByPk(id, {
+      include: [
+        { model: User, as: 'user' },
+        { model: EmployeeSkill, as: 'skills' },
+        { model: LeaveBalance, as: 'leaveBalance' },
+        { model: EmployeeFinance, as: 'finance' },
+        { model: Employee, as: 'reportingManager', attributes: ['id', 'firstName', 'lastName'] },
+        {
+          model: TeamMember,
+          as: 'teamMemberships',
+          include: [
+            {
+              model: Team,
+              as: 'team',
+              include: [
+                {
+                  model: Project,
+                  as: 'project',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [[{ model: TeamMember, as: 'teamMemberships' }, 'joinedAt', 'DESC']],
+    });
+
+    if (!employee) {
+      res.status(404).json({ error: 'Employee not found' });
+      return;
+    }
+
+    res.json({ employee });
+  } catch (error) {
+    console.error('Get employee by ID error:', error);
+    res.status(500).json({ error: 'Failed to fetch employee' });
+  }
+};
+
+export const createEmployee = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const {
+      userId,
+      employeeCode,
+      firstName,
+      lastName,
+      email,
+      phone,
+      dateOfJoining,
+      designation,
+      department,
+      reportingManagerId,
+      currentWorkload,
+      maxCapacity,
+      velocity,
+    } = req.body;
+
+    // Check if employee code already exists
+    const existing = await Employee.findOne({ where: { employeeCode } });
+    if (existing) {
+      res.status(400).json({ error: 'Employee code already exists' });
+      return;
+    }
+
+    const employee = await Employee.create({
+      userId,
+      employeeCode,
+      firstName,
+      lastName,
+      email,
+      phone,
+      dateOfJoining,
+      designation,
+      department,
+      reportingManagerId,
+      currentWorkload: currentWorkload || 0,
+      maxCapacity: maxCapacity || 40,
+      velocity: velocity || 10,
+      availability: 'available',
+      isActive: true,
+    });
+
+    // Create initial leave balance for current year
+    await LeaveBalance.create({
+      employeeId: employee.id,
+      year: new Date().getFullYear(),
+      casualLeave: 12,
+      sickLeave: 12,
+      earnedLeave: 15,
+      unpaidLeave: 0,
+    });
+
+    res.status(201).json({ message: 'Employee created successfully', employee });
+  } catch (error) {
+    console.error('Create employee error:', error);
+    res.status(500).json({ error: 'Failed to create employee' });
+  }
+};
+
+export const updateEmployee = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const employee = await Employee.findByPk(id);
+
+    if (!employee) {
+      res.status(404).json({ error: 'Employee not found' });
+      return;
+    }
+
+    await employee.update(updates);
+
+    res.json({ message: 'Employee updated successfully', employee });
+  } catch (error) {
+    console.error('Update employee error:', error);
+    res.status(500).json({ error: 'Failed to update employee' });
+  }
+};
+
+export const deleteEmployee = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const employee = await Employee.findByPk(id);
+
+    if (!employee) {
+      res.status(404).json({ error: 'Employee not found' });
+      return;
+    }
+
+    // Soft delete - mark as inactive
+    await employee.update({ isActive: false });
+
+    res.json({ message: 'Employee deleted successfully' });
+  } catch (error) {
+    console.error('Delete employee error:', error);
+    res.status(500).json({ error: 'Failed to delete employee' });
+  }
+};
+
+export const getEmployeeSkills = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const skills = await EmployeeSkill.findAll({
+      where: { employeeId: id },
+      order: [['yearsOfExperience', 'DESC']],
+    });
+
+    res.json({ skills });
+  } catch (error) {
+    console.error('Get employee skills error:', error);
+    res.status(500).json({ error: 'Failed to fetch skills' });
+  }
+};
+
+export const addEmployeeSkill = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { skillName, proficiency, yearsOfExperience } = req.body;
+
+    const skill = await EmployeeSkill.create({
+      employeeId: id,
+      skillName,
+      proficiency: proficiency || 'intermediate',
+      yearsOfExperience: yearsOfExperience || 0,
+    });
+
+    res.status(201).json({ message: 'Skill added successfully', skill });
+  } catch (error: any) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      res.status(400).json({ error: 'Skill already exists for this employee' });
+      return;
+    }
+    console.error('Add employee skill error:', error);
+    res.status(500).json({ error: 'Failed to add skill' });
+  }
+};
+
+export const updateEmployeeSkill = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id, skillId } = req.params;
+    const updates = req.body;
+
+    const skill = await EmployeeSkill.findOne({
+      where: { id: skillId, employeeId: id },
+    });
+
+    if (!skill) {
+      res.status(404).json({ error: 'Skill not found' });
+      return;
+    }
+
+    await skill.update(updates);
+
+    res.json({ message: 'Skill updated successfully', skill });
+  } catch (error) {
+    console.error('Update employee skill error:', error);
+    res.status(500).json({ error: 'Failed to update skill' });
+  }
+};
+
+export const deleteEmployeeSkill = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id, skillId } = req.params;
+
+    const skill = await EmployeeSkill.findOne({
+      where: { id: skillId, employeeId: id },
+    });
+
+    if (!skill) {
+      res.status(404).json({ error: 'Skill not found' });
+      return;
+    }
+
+    await skill.destroy();
+
+    res.json({ message: 'Skill deleted successfully' });
+  } catch (error) {
+    console.error('Delete employee skill error:', error);
+    res.status(500).json({ error: 'Failed to delete skill' });
+  }
+};

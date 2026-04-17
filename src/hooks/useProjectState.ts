@@ -1,19 +1,40 @@
-import { useState, useCallback } from 'react';
-import { Project, Team, TeamMember } from '@/types/allocation';
+import { useState, useCallback, useEffect } from 'react';
+import { Project, TeamMember, ProjectRequirement } from '@/types/allocation';
 import { mockProjects } from '@/data/mockData';
 
-export function useProjectState() {
-    const [projects, setProjects] = useState<Project[]>(mockProjects);
+const STORAGE_KEY = 'allocx_projects';
+const DEMO_ORG_ID = 'org-demo-1';
 
-    const addProject = useCallback((name: string, requirements: { role: string; count: number }[] = []) => {
+export function useProjectState() {
+    // Initialize state from local storage or fallback to mockProjects
+    const [projects, setProjects] = useState<Project[]>(() => {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            return JSON.parse(stored);
+        }
+        // If not stored, ensure mockProjects have orgId. 
+        // Note: mockBackend might have already seeded this key if viewed elsewhere, 
+        // but this handles direct first load of this page.
+        const seeded = mockProjects.map(p => ({ ...p, organisationId: DEMO_ORG_ID }));
+        // Side-effect in initializer is generally discouraged but safe for sync localStorage init
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+        return seeded;
+    });
+
+    // Persist changes to local storage
+    useEffect(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    }, [projects]);
+
+    const addProject = useCallback((name: string, requirements: ProjectRequirement[] = [], id?: string) => {
         const newProject: Project = {
-            id: `proj-${Date.now()}`,
+            id: id || `proj-${Date.now()}`,
             name,
             teams: [
                 {
                     id: `team-${Date.now()}`,
                     name: 'Core Team',
-                    projectId: `proj-${Date.now()}`,
+                    projectId: id || `proj-${Date.now()}`,
                     members: []
                 }
             ],
@@ -22,7 +43,7 @@ export function useProjectState() {
         setProjects((prev) => [...prev, newProject]);
     }, []);
 
-    const addTeam = useCallback((projectId: string, name: string) => {
+    const addTeam = useCallback((projectId: string, name: string, id?: string) => {
         setProjects((prev) =>
             prev.map((p) => {
                 if (p.id === projectId) {
@@ -31,7 +52,7 @@ export function useProjectState() {
                         teams: [
                             ...p.teams,
                             {
-                                id: `team-${Date.now()}`,
+                                id: id || `team-${Date.now()}`,
                                 name,
                                 projectId,
                                 members: [],
@@ -44,10 +65,7 @@ export function useProjectState() {
         );
     }, []);
 
-    const addMember = useCallback((teamId: string, memberData: Omit<TeamMember, 'id' | 'teamId'>) => {
-        const newMemberId = `member-${Date.now()}`;
-        const newMember: TeamMember = { ...memberData, id: newMemberId, teamId };
-
+    const addMember = useCallback((teamId: string, memberData: Omit<TeamMember, 'teamId'>) => {
         setProjects((prev) => {
             return prev.map((p) => {
                 const teamIndex = p.teams.findIndex(t => t.id === teamId);
@@ -73,7 +91,7 @@ export function useProjectState() {
                     return {
                         ...p,
                         requirements: newRequirements,
-                        teams: p.teams.map(t => t.id === teamId ? { ...t, members: [...t.members, newMember] } : t)
+                        teams: p.teams.map(t => t.id === teamId ? { ...t, members: [...t.members, { ...memberData, teamId }] } : t)
                     };
                 }
                 return p;
@@ -183,6 +201,7 @@ export function useProjectState() {
 
     return {
         projects,
+        setProjectsState: setProjects,
         addProject,
         addTeam,
         addMember,

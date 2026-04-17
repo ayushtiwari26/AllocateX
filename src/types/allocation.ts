@@ -26,6 +26,13 @@ export interface TeamMember {
   velocity: number; // tasks per week
   availability: 'available' | 'busy' | 'overloaded';
   teamId: string;
+  allocationPercentage?: number;
+  employeeId?: string;
+}
+
+export interface ProjectRequirement {
+  role: string;
+  count: number;
 }
 
 export interface Team {
@@ -33,13 +40,25 @@ export interface Team {
   name: string;
   projectId: string;
   members: TeamMember[];
+  requirements?: ProjectRequirement[];
+  description?: string;
+  leadId?: string;
+  leadName?: string;
 }
 
 export interface Project {
   id: string;
   name: string;
   teams: Team[];
-  requirements?: { role: string; count: number }[];
+  requirements?: ProjectRequirement[];
+  organisationId?: string;
+  description?: string;
+  status?: 'active' | 'on-hold' | 'completed' | 'cancelled';
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+  managerId?: string;
+  managerName?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface AIMatch {
@@ -47,6 +66,12 @@ export interface AIMatch {
   confidenceScore: number;
   reasoning: string;
   conflicts: string[];
+}
+
+export interface TeamAssignmentInput {
+  employeeId: string;
+  role: string;
+  allocationPercentage?: number;
 }
 
 export interface Assignment {

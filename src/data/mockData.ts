@@ -2,191 +2,113 @@ import { Task, TeamMember, Team, Project, Assignment, Priority } from '@/types/a
 
 const skillTags = [
   'React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'Docker',
-  'GraphQL', 'PostgreSQL', 'MongoDB', 'UI/UX', 'Testing', 'DevOps'
+  'GraphQL', 'PostgreSQL', 'MongoDB', 'UI/UX', 'Testing', 'DevOps',
+  'Rust', 'Go', 'Flutter', 'Angular', 'Vue.js', 'Java', 'Spring'
 ];
 
-export const mockTasks: Task[] = [
-  {
-    id: 'task-1',
-    title: 'Implement User Authentication',
-    description: 'Build OAuth2 integration with social providers',
-    priority: 'high',
-    estimatedHours: 16,
-    requiredSkills: ['React', 'Node.js', 'TypeScript'],
-    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    projectId: 'proj-1'
-  },
-  {
-    id: 'task-2',
-    title: 'Database Migration Script',
-    description: 'Create migration for new user schema',
-    priority: 'critical',
-    estimatedHours: 8,
-    requiredSkills: ['PostgreSQL', 'Node.js'],
-    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-    projectId: 'proj-1'
-  },
-  {
-    id: 'task-3',
-    title: 'Design System Components',
-    description: 'Build reusable component library',
-    priority: 'medium',
-    estimatedHours: 24,
-    requiredSkills: ['React', 'TypeScript', 'UI/UX'],
-    deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-    projectId: 'proj-1'
-  },
-  {
-    id: 'task-4',
-    title: 'API Performance Optimization',
-    description: 'Optimize slow endpoints and add caching',
-    priority: 'high',
-    estimatedHours: 12,
-    requiredSkills: ['Node.js', 'PostgreSQL', 'AWS'],
-    deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    projectId: 'proj-2'
-  },
-  {
-    id: 'task-5',
-    title: 'CI/CD Pipeline Setup',
-    description: 'Configure automated deployment pipeline',
-    priority: 'medium',
-    estimatedHours: 10,
-    requiredSkills: ['DevOps', 'Docker', 'AWS'],
-    deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-    projectId: 'proj-2'
-  },
-  {
-    id: 'task-6',
-    title: 'Unit Test Coverage',
-    description: 'Increase test coverage to 80%',
-    priority: 'low',
-    estimatedHours: 20,
-    requiredSkills: ['Testing', 'TypeScript', 'React'],
-    deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
-    projectId: 'proj-1'
-  }
-];
+// --- Members (20 Total) ---
+// 2 Co-founders, 3 PMs, 5 Team Leads, 10 Developers
 
 export const mockMembers: TeamMember[] = [
+  // Co-founders
   {
-    id: 'member-1',
-    name: 'Sarah Chen',
-    role: 'Senior Frontend Engineer',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&q=80',
-    skills: ['React', 'TypeScript', 'UI/UX', 'Testing'],
-    currentWorkload: 25,
-    maxCapacity: 40,
-    velocity: 3.5,
-    availability: 'available',
-    teamId: 'team-1'
+    id: 'm-cf-1', name: 'Eleanor Sterling', role: 'Co-Founder', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Eleanor',
+    skills: ['Strategy', 'Product', 'Management'], currentWorkload: 45, maxCapacity: 50, velocity: 5, availability: 'busy', teamId: 'team-lead'
   },
   {
-    id: 'member-2',
-    name: 'Marcus Johnson',
-    role: 'Backend Lead',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80',
-    skills: ['Node.js', 'PostgreSQL', 'GraphQL', 'AWS'],
-    currentWorkload: 38,
-    maxCapacity: 40,
-    velocity: 4.0,
-    availability: 'busy',
-    teamId: 'team-1'
+    id: 'm-cf-2', name: 'Rajiv Kapoor', role: 'Co-Founder', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rajiv',
+    skills: ['Tech Strategy', 'Architecture', 'Networking'], currentWorkload: 40, maxCapacity: 40, velocity: 5, availability: 'available', teamId: 'team-lead'
+  },
+  // Project Managers (3)
+  {
+    id: 'm-pm-1', name: 'Sarah Jenkins', role: 'Project Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    skills: ['Agile', 'Scrum', 'Planning'], currentWorkload: 35, maxCapacity: 40, velocity: 4, availability: 'available', teamId: 'team-pm'
   },
   {
-    id: 'member-3',
-    name: 'Emily Rodriguez',
-    role: 'Full Stack Developer',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&q=80',
-    skills: ['React', 'TypeScript', 'Node.js', 'MongoDB'],
-    currentWorkload: 42,
-    maxCapacity: 40,
-    velocity: 3.0,
-    availability: 'overloaded',
-    teamId: 'team-1'
+    id: 'm-pm-2', name: 'Michael Chang', role: 'Project Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael',
+    skills: ['Risk Management', 'JIRA', 'Communication'], currentWorkload: 38, maxCapacity: 40, velocity: 4, availability: 'busy', teamId: 'team-pm'
   },
   {
-    id: 'member-4',
-    name: 'David Kim',
-    role: 'DevOps Engineer',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&q=80',
-    skills: ['DevOps', 'Docker', 'AWS', 'Python'],
-    currentWorkload: 20,
-    maxCapacity: 40,
-    velocity: 3.8,
-    availability: 'available',
-    teamId: 'team-2'
+    id: 'm-pm-3', name: 'Amara Ndiaye', role: 'Project Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amara',
+    skills: ['Kanban', 'Leadership', 'Roadmapping'], currentWorkload: 20, maxCapacity: 40, velocity: 4, availability: 'available', teamId: 'team-pm'
+  },
+  // Team Leads (5)
+  {
+    id: 'm-lead-1', name: 'David Kim', role: 'Team Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+    skills: ['React', 'TypeScript', 'Architecture'], currentWorkload: 40, maxCapacity: 40, velocity: 4.5, availability: 'busy', teamId: 'team-1'
   },
   {
-    id: 'member-5',
-    name: 'Aisha Patel',
-    role: 'UI Designer',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80',
-    skills: ['UI/UX', 'React', 'TypeScript', 'Testing'],
-    currentWorkload: 15,
-    maxCapacity: 40,
-    velocity: 4.2,
-    availability: 'available',
-    teamId: 'team-2'
+    id: 'm-lead-2', name: 'Elena Rodriguez', role: 'Team Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Elena',
+    skills: ['Node.js', 'AWS', 'System Design'], currentWorkload: 42, maxCapacity: 40, velocity: 4.5, availability: 'overloaded', teamId: 'team-2'
   },
   {
-    id: 'member-6',
-    name: 'James Wilson',
-    role: 'Backend Engineer',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&q=80',
-    skills: ['PostgreSQL', 'Node.js', 'Python', 'AWS'],
-    currentWorkload: 32,
-    maxCapacity: 40,
-    velocity: 3.2,
-    availability: 'busy',
-    teamId: 'team-2'
-  }
+    id: 'm-lead-3', name: 'James Wilson', role: 'Team Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=James',
+    skills: ['Python', 'Django', 'ML'], currentWorkload: 30, maxCapacity: 40, velocity: 4.5, availability: 'available', teamId: 'team-3'
+  },
+  {
+    id: 'm-lead-4', name: 'Anita Patel', role: 'Team Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Anita',
+    skills: ['DevOps', 'Kubernetes', 'Go'], currentWorkload: 35, maxCapacity: 40, velocity: 4.5, availability: 'available', teamId: 'team-4'
+  },
+  {
+    id: 'm-lead-5', name: 'Robert Chen', role: 'Team Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Robert',
+    skills: ['Mobile', 'Flutter', 'iOS'], currentWorkload: 39, maxCapacity: 40, velocity: 4.5, availability: 'busy', teamId: 'team-5'
+  },
+  // Developers (10)
+  { id: 'm-dev-1', name: 'Alice Freeman', role: 'Senior Frontend Engineer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice', skills: ['React', 'CSS', 'Figma'], currentWorkload: 30, maxCapacity: 40, velocity: 3.5, availability: 'available', teamId: 'team-1' },
+  { id: 'm-dev-2', name: 'Bob Smith', role: 'Backend Engineer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob', skills: ['Node.js', 'SQL'], currentWorkload: 40, maxCapacity: 40, velocity: 3.0, availability: 'busy', teamId: 'team-1' },
+  { id: 'm-dev-3', name: 'Charlie Davis', role: 'Full Stack Developer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie', skills: ['React', 'Node.js'], currentWorkload: 20, maxCapacity: 40, velocity: 3.2, availability: 'available', teamId: 'team-2' },
+  { id: 'm-dev-4', name: 'Diana Prince', role: 'DevOps Engineer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Diana', skills: ['AWS', 'Terraform'], currentWorkload: 10, maxCapacity: 40, velocity: 3.8, availability: 'available', teamId: 'team-2' },
+  { id: 'm-dev-5', name: 'Evan Wright', role: 'Frontend Engineer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Evan', skills: ['Vue.js', 'Tailwind'], currentWorkload: 35, maxCapacity: 40, velocity: 3.0, availability: 'available', teamId: 'team-3' },
+  { id: 'm-dev-6', name: 'Fiona Gallagher', role: 'Backend Engineer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Fiona', skills: ['Python', 'FastAPI'], currentWorkload: 45, maxCapacity: 40, velocity: 3.5, availability: 'overloaded', teamId: 'team-3' },
+  { id: 'm-dev-7', name: 'George Miller', role: 'Mobile Developer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=George', skills: ['Flutter', 'Dart'], currentWorkload: 25, maxCapacity: 40, velocity: 3.0, availability: 'available', teamId: 'team-4' },
+  { id: 'm-dev-8', name: 'Hannah Lee', role: 'QA Engineer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hannah', skills: ['Testing', 'Cypress'], currentWorkload: 30, maxCapacity: 40, velocity: 3.0, availability: 'available', teamId: 'team-4' },
+  { id: 'm-dev-9', name: 'Ian Scott', role: 'Full Stack Developer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ian', skills: ['Next.js', 'PostgreSQL'], currentWorkload: 38, maxCapacity: 40, velocity: 3.5, availability: 'busy', teamId: 'team-5' },
+  { id: 'm-dev-10', name: 'Julia Roberts', role: 'UI Designer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Julia', skills: ['Figma', 'Prototyping'], currentWorkload: 15, maxCapacity: 40, velocity: 4.0, availability: 'available', teamId: 'team-5' },
+];
+
+// --- Projects (15) ---
+// Two main "products" could be represented as naming conventions or just distinct big projects.
+const projectNames = [
+  'E-Commerce Platform', 'Analytics Dashboard', 'Mobile App Redesign', 'Internal Tools Suite', 'Customer Portal',
+  'Marketing Website', 'Legacy Migration', 'AI Integration Module', 'Blockchain Prototype', 'Cloud Infrastructure',
+  'Design System 2.0', 'Payment Gateway Integration', 'HR Management System', 'Inventory Tracker', 'Social Media Bot'
 ];
 
 export const mockTeams: Team[] = [
-  {
-    id: 'team-1',
-    name: 'Frontend Squad',
-    projectId: 'proj-1',
-    members: mockMembers.filter(m => m.teamId === 'team-1')
-  },
-  {
-    id: 'team-2',
-    name: 'Backend Squad',
-    projectId: 'proj-2',
-    members: mockMembers.filter(m => m.teamId === 'team-2')
-  }
+  { id: 'team-lead', name: 'Leadership', projectId: 'proj-1', members: mockMembers.slice(0, 2) },
+  { id: 'team-pm', name: 'Product Management', projectId: 'proj-1', members: mockMembers.slice(2, 5) },
+  { id: 'team-1', name: 'Alpha Squad', projectId: 'proj-1', members: [mockMembers[5], mockMembers[10], mockMembers[11]] }, // David + Alice + Bob
+  { id: 'team-2', name: 'Beta Squad', projectId: 'proj-2', members: [mockMembers[6], mockMembers[12], mockMembers[13]] }, // Elena + Charlie + Diana
+  { id: 'team-3', name: 'Gamma Squad', projectId: 'proj-3', members: [mockMembers[7], mockMembers[14], mockMembers[15]] }, // James + Evan + Fiona
+  { id: 'team-4', name: 'Delta Squad', projectId: 'proj-4', members: [mockMembers[8], mockMembers[16], mockMembers[17]] }, // Anita + George + Hannah
+  { id: 'team-5', name: 'Epsilon Squad', projectId: 'proj-5', members: [mockMembers[9], mockMembers[18], mockMembers[19]] }, // Robert + Ian + Julia
 ];
 
-export const mockProjects: Project[] = [
-  {
-    id: 'proj-1',
-    name: 'E-Commerce Platform',
-    teams: mockTeams.filter(t => t.projectId === 'proj-1')
-  },
-  {
-    id: 'proj-2',
-    name: 'Analytics Dashboard',
-    teams: mockTeams.filter(t => t.projectId === 'proj-2')
-  }
+// Generate 15 Projects
+export const mockProjects: Project[] = projectNames.map((name, index) => {
+  const pid = `proj-${index + 1}`;
+  // Assign random teams to projects for demo purposes, or just empty teams for extra projects
+  const assignedTeams = mockTeams.filter(t => t.projectId === pid);
+
+  return {
+    id: pid,
+    name: name,
+    teams: assignedTeams,
+    requirements: [
+      { role: 'Frontend Engineer', count: 2 },
+      { role: 'Backend Engineer', count: 1 }
+    ]
+  };
+});
+
+
+// Mock Tasks (just a few for visibility)
+export const mockTasks: Task[] = [
+  { id: 't-1', title: 'Setup Repo', description: 'Init git', priority: 'high', estimatedHours: 4, requiredSkills: ['DevOps'], deadline: new Date(Date.now() + 86400000), projectId: 'proj-1' },
+  { id: 't-2', title: 'Login Page', description: 'Create login', priority: 'critical', estimatedHours: 12, requiredSkills: ['React'], deadline: new Date(Date.now() + 172800000), projectId: 'proj-1' },
 ];
 
 export const mockAssignments: Assignment[] = [
-  {
-    id: 'assign-1',
-    taskId: 'task-1',
-    memberId: 'member-1',
-    assignedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    mode: 'auto',
-    assignedBy: 'AI System',
-    aiMatchScore: 0.92
-  },
-  {
-    id: 'assign-2',
-    taskId: 'task-2',
-    memberId: 'member-2',
-    assignedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    mode: 'manual',
-    assignedBy: 'John Doe'
-  }
+  { id: 'a-1', taskId: 't-2', memberId: 'm-dev-1', assignedAt: new Date(), mode: 'auto', assignedBy: 'AI', aiMatchScore: 0.95 },
+  { id: 'a-2', taskId: 't-1', memberId: 'm-dev-4', assignedAt: new Date(Date.now() - 3600000), mode: 'manual', assignedBy: 'PM' },
 ];

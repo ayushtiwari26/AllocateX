@@ -1,11 +1,29 @@
-import { Assignment } from '@/types/allocation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, User, Clock } from 'lucide-react';
-import { mockTasks, mockMembers } from '@/data/mockData';
+
+export interface AssignmentHistoryEntry {
+  id: string;
+  mode: 'auto' | 'manual';
+  assignedAt: string | Date;
+  assignedBy?: string;
+  aiMatchScore?: number;
+  task: {
+    id: string;
+    title: string;
+    description?: string;
+    priority: 'low' | 'medium' | 'high' | 'critical';
+  };
+  member: {
+    id: string;
+    name: string;
+    avatar?: string;
+    role?: string;
+  };
+}
 
 interface AssignmentHistoryProps {
-  assignments: Assignment[];
+  assignments: AssignmentHistoryEntry[];
 }
 
 export function AssignmentHistory({ assignments }: AssignmentHistoryProps) {
@@ -18,34 +36,29 @@ export function AssignmentHistory({ assignments }: AssignmentHistoryProps) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="px-6 py-4 border-b border-white/8">
-        <h2 className="text-lg font-display font-bold text-white">Assignment History</h2>
-        <p className="text-xs text-white/60 mt-1 font-mono">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h2 className="text-xl font-semibold tracking-tight text-gray-900">Assignment History</h2>
+        <p className="text-xs text-gray-500 mt-1 font-mono">
           {assignments.length} recent allocations
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {assignments.map((assignment) => {
-          const task = mockTasks.find((t) => t.id === assignment.taskId);
-          const member = mockMembers.find((m) => m.id === assignment.memberId);
-
-          if (!task || !member) return null;
-
+          const { task, member } = assignment;
           return (
             <div
               key={assignment.id}
-              className="glass-panel rounded-lg p-4 hover:bg-white/10 transition-all cursor-pointer group"
+              className="bg-white border border-gray-100 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer group shadow-sm"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <Badge
                   variant="outline"
-                  className={`text-[10px] font-mono uppercase ${
-                    assignment.mode === 'auto'
-                      ? 'bg-[#00D9FF]/20 text-[#00D9FF] border-[#00D9FF]/30'
-                      : 'bg-[#FFB84D]/20 text-[#FFB84D] border-[#FFB84D]/30'
-                  }`}
+                  className={`text-[10px] font-mono uppercase ${assignment.mode === 'auto'
+                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                      : 'bg-orange-50 text-orange-700 border-orange-200'
+                    }`}
                 >
                   {assignment.mode === 'auto' ? (
                     <Sparkles className="w-3 h-3 mr-1 inline" />
@@ -55,50 +68,50 @@ export function AssignmentHistory({ assignments }: AssignmentHistoryProps) {
                   {assignment.mode}
                 </Badge>
 
-                <div className="flex items-center gap-1 text-[10px] font-mono text-white/50">
+                <div className="flex items-center gap-1 text-[10px] font-mono text-gray-400">
                   <Clock className="w-3 h-3" />
-                  {formatTime(assignment.assignedAt)}
+                  {formatTime(new Date(assignment.assignedAt))}
                 </div>
               </div>
 
               {/* Task Info */}
-              <h3 className="text-sm font-body font-semibold text-white mb-2 line-clamp-2 group-hover:text-[#00D9FF] transition-colors">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
                 {task.title}
               </h3>
 
               {/* Member Info */}
               <div className="flex items-center gap-2 mb-2">
-                <Avatar className="w-6 h-6 border border-white/10">
+                <Avatar className="w-6 h-6 border border-gray-200">
                   <AvatarImage src={member.avatar} alt={member.name} />
-                  <AvatarFallback className="bg-white/10 text-white text-[10px]">
+                  <AvatarFallback className="bg-gray-100 text-gray-600 text-[10px]">
                     {member.name
                       .split(' ')
                       .map((n) => n[0])
                       .join('')}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-xs font-body text-white/80">{member.name}</span>
+                <span className="text-xs text-gray-600">{member.name}{member.role ? ` • ${member.role}` : ''}</span>
               </div>
 
               {/* AI Match Score or Assignee */}
               {assignment.mode === 'auto' && assignment.aiMatchScore && (
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-white/60 font-body">Match Score:</span>
-                  <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <span className="text-gray-500">Match:</span>
+                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-[#00D9FF] to-[#00D9FF]/60"
+                      className="h-full bg-indigo-500"
                       style={{ width: `${assignment.aiMatchScore * 100}%` }}
                     />
                   </div>
-                  <span className="font-mono text-[#00D9FF]">
+                  <span className="font-mono text-indigo-600 font-medium">
                     {Math.round(assignment.aiMatchScore * 100)}%
                   </span>
                 </div>
               )}
 
-              {assignment.mode === 'manual' && (
-                <div className="text-xs text-white/60 font-body">
-                  Assigned by <span className="text-[#FFB84D]">{assignment.assignedBy}</span>
+              {assignment.mode === 'manual' && assignment.assignedBy && (
+                <div className="text-xs text-gray-500">
+                  Assigned by <span className="text-orange-600 font-medium">{assignment.assignedBy}</span>
                 </div>
               )}
             </div>
