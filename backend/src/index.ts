@@ -68,12 +68,28 @@ const startServer = async () => {
     }
 
     // Start server
-    app.listen(config.port, () => {
+    const server = app.listen(config.port, () => {
       console.log(`✓ Server running on port ${config.port}`);
       console.log(`✓ Environment: ${config.env}`);
       console.log(`✓ API available at http://localhost:${config.port}/api`);
       console.log(`✓ API Documentation at http://localhost:${config.port}/api-docs`);
     });
+
+    // Handle server errors (e.g. port in use)
+    server.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${config.port} is already in use. Please stop the other process or change the port.`);
+      } else {
+        console.error('❌ Server error:', error);
+      }
+      process.exit(1);
+    });
+    
+    // Keep alive check
+    server.on('close', () => {
+        console.log('Server closed');
+    });
+    
   } catch (error) {
     console.error('Unable to start server:', error);
     process.exit(1);

@@ -204,7 +204,7 @@ npm run dev
 
 ### 4. Access API
 ```
-http://localhost:5000/api
+http://localhost:5001/api
 ```
 
 ## 🔧 Configuration Required

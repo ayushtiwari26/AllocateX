@@ -121,20 +121,21 @@ npm install
 npm run dev
 ```
 
-Server will start at `http://localhost:5000`
+Server will start at `http://localhost:5001`
 
 ### 6. Build for Production
 
 ```bash
 npm run build
 npm start
+npm run start:backend
 ```
 
 ## API Documentation
 
 ### Base URL
 ```
-http://localhost:5000/api
+http://localhost:5001/api
 ```
 
 ### Authentication

@@ -10,6 +10,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "types:supabase": "npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/types/supabase.ts",
+    "start:backend": "cd backend && npm start",
     "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android",
     "cap:run:android": "npx cap run android",

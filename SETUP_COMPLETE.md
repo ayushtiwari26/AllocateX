@@ -11,8 +11,8 @@
 2. **✅ API Server**
    - Express + TypeScript server running on port 5000
    - Firebase authentication middleware
-   - Swagger documentation at http://localhost:5000/api-docs
-   - Health check endpoint at http://localhost:5000/health
+   - Swagger documentation at http://localhost:5001/api-docs
+   - Health check endpoint at http://localhost:5001/health
 
 3. **✅ Demo Data Seeded**
    - 20 Users (Co-founders, PMs, Leads, Developers)
@@ -45,7 +45,7 @@
 cd backend
 npm run dev
 ```
-✅ Server running at http://localhost:5000
+✅ Server running at http://localhost:5001
 
 ### Start Frontend
 ```bash
@@ -54,7 +54,7 @@ npm run dev
 ✅ App running at http://localhost:5173
 
 ### Test API
-Open http://localhost:5000/api-docs for interactive API testing
+Open http://localhost:5001/api-docs for interactive API testing
 
 ## 📝 Demo Credentials
 
@@ -202,7 +202,7 @@ Located at: `.env.local`
 
 Required variables:
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 VITE_FIREBASE_API_KEY=your_key
 VITE_FIREBASE_AUTH_DOMAIN=your_domain
 VITE_FIREBASE_PROJECT_ID=your_project
@@ -210,7 +210,7 @@ VITE_FIREBASE_PROJECT_ID=your_project
 
 ## 📚 Documentation
 
-- **API Docs**: http://localhost:5000/api-docs (Swagger UI)
+- **API Docs**: http://localhost:5001/api-docs (Swagger UI)
 - **Backend README**: `backend/README.md`
 - **Integration Guide**: `BACKEND_INTEGRATION_GUIDE.md`
 - **Copilot Instructions**: `.github/copilot-instructions.md`
@@ -287,7 +287,7 @@ npm run db:seed:demo
 ### API Not Responding
 1. Check backend logs in terminal
 2. Verify `.env` configuration
-3. Test health endpoint: `curl http://localhost:5000/health`
+3. Test health endpoint: `curl http://localhost:5001/health`
 4. Check Swagger UI for errors
 
 ## 📈 Database Statistics

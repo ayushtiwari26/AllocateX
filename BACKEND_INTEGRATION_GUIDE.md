@@ -12,7 +12,7 @@ This guide explains how to connect the React frontend with the Express backend.
 - ✅ All 13 models defined and synced
 - ✅ Controllers and routes implemented
 - ✅ Firebase authentication middleware ready
-- ✅ Swagger documentation at http://localhost:5000/api-docs
+- ✅ Swagger documentation at http://localhost:5001/api-docs
 - ✅ Demo data seeded (20 employees, 3 projects, attendance, leave, finance)
 
 ### Frontend
@@ -31,7 +31,7 @@ cd backend
 npm run dev
 ```
 
-Server runs at: http://localhost:5000
+Server runs at: http://localhost:5001
 
 ### 2. Start Frontend
 
@@ -47,7 +47,7 @@ Frontend runs at: http://localhost:5173
 Update `.env.local` in root directory with your Firebase credentials:
 
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 VITE_FIREBASE_API_KEY=your_actual_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_project_id
@@ -371,7 +371,7 @@ The seeded database contains:
 ### Check Backend Status
 
 ```bash
-curl http://localhost:5000/api/employees
+curl http://localhost:5001/api/employees
 ```
 
 Should return JSON array of employees.
@@ -425,7 +425,7 @@ Open browser DevTools → Network tab, filter by "Fetch/XHR":
 ## 📚 API Documentation
 
 Full API documentation available at:
-http://localhost:5000/api-docs
+http://localhost:5001/api-docs
 
 Interactive Swagger UI with:
 - All endpoints listed

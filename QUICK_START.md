@@ -5,9 +5,9 @@
 You now have a **complete, working backend** with a **ready-to-integrate frontend API layer**.
 
 ### What's Running
-- ✅ Backend API: `http://localhost:5000`
-- ✅ Swagger Docs: `http://localhost:5000/api-docs`
-- ✅ Health Check: `http://localhost:5000/health`
+- ✅ Backend API: `http://localhost:5001`
+- ✅ Swagger Docs: `http://localhost:5001/api-docs`
+- ✅ Health Check: `http://localhost:5001/health`
 - ✅ Database: PostgreSQL with 20 employees, 3 projects, attendance, leave data
 - ✅ Frontend: Ready to connect (port 5173)
 
@@ -74,7 +74,7 @@ You now have a **complete, working backend** with a **ready-to-integrate fronten
 
 ### Option 1: Quick API Test (No Code Changes Needed)
 
-Open Swagger UI: http://localhost:5000/api-docs
+Open Swagger UI: http://localhost:5001/api-docs
 
 Try these endpoints:
 1. Click on "GET /api/employees"
@@ -271,13 +271,13 @@ holidays (5 records)
 ## 🔍 Testing Checklist
 
 ### Backend Health
-- [x] Server responds: `curl http://localhost:5000/health`
+- [x] Server responds: `curl http://localhost:5001/health`
 - [x] Database connected: Check terminal logs
 - [x] Models synced: 13 tables created
 - [x] Data seeded: Run query `SELECT count(*) FROM employees;`
 
 ### API Endpoints
-Test in Swagger UI (http://localhost:5000/api-docs):
+Test in Swagger UI (http://localhost:5001/api-docs):
 - [x] GET /api/employees (needs auth)
 - [x] GET /api/projects (needs auth)
 - [x] GET /api/attendance/employee/:id (needs auth)
@@ -361,13 +361,13 @@ Pick the simplest component (e.g., employee list) and replace mock data with API
 ## 📞 Need Help?
 
 ### Resources
-- **API Docs**: http://localhost:5000/api-docs
+- **API Docs**: http://localhost:5001/api-docs
 - **Integration Guide**: `BACKEND_INTEGRATION_GUIDE.md`
 - **Setup Summary**: `SETUP_COMPLETE.md`
 - **Backend README**: `backend/README.md`
 
 ### Debug Steps
-1. Check backend is running: `curl http://localhost:5000/health`
+1. Check backend is running: `curl http://localhost:5001/health`
 2. Check database: `psql -d allocatex_db -c "SELECT count(*) FROM employees;"`
 3. Check logs: Look at backend terminal
 4. Test in Swagger: Try endpoints in browser

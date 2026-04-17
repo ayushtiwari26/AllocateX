@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 
 // API Configuration - Handle different environments
 const getApiBaseUrl = () => {
-  const configuredUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const configuredUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
   
   // On native Android, localhost refers to the device itself, not the host machine
   // Use 10.0.2.2 for Android emulator or configure your actual server IP
