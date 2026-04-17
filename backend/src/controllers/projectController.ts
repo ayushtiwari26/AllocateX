@@ -1,9 +1,29 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { Project, Team, TeamMember, Employee, EmployeeSkill } from '../models';
+import { Project, Team, TeamMember, Employee, EmployeeSkill, User } from '../models';
 import { Op } from 'sequelize';
 
 type ProjectRequirement = { role: string; count: number };
+
+type GitLabMember = {
+  id: number;
+  username: string;
+  name: string;
+  state?: string;
+  access_level?: number;
+  email?: string;
+  web_url?: string;
+};
+
+type TeamImportMember = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  designation?: string;
+  department?: string;
+  role?: string;
+  allocationPercentage?: number;
+};
 
 const parseRequirements = (raw: any): ProjectRequirement[] => {
   if (!raw) return [];
@@ -63,6 +83,114 @@ const deriveRoleKeywords = (role: string): string[] => {
     .split(/[^a-z0-9]+/)
     .filter((token) => token.length > 2)
     .map((token) => token.charAt(0).toUpperCase() + token.slice(1));
+};
+
+const generateImportEmployeeCode = (index: number) => {
+  const ts = Date.now().toString().slice(-6);
+  const suffix = `${index}`.padStart(3, '0');
+  return `IMP${ts}${suffix}`;
+};
+
+const sanitizeEmail = (email: string) => email.trim().toLowerCase();
+
+const parseName = (fullName: string) => {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return { firstName: 'Unknown', lastName: 'User' };
+  }
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: 'User' };
+  }
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' '),
+  };
+};
+
+const toSyntheticGitLabEmail = (username: string, gitlabProjectId: number) => {
+  const safeUsername = (username || 'unknown').toLowerCase().replace(/[^a-z0-9._-]/g, '-');
+  return `${safeUsername}+gl${gitlabProjectId}@allocatex.local`;
+};
+
+const fetchGitLabMembers = async (instanceUrl: string, accessToken: string, projectId: number) => {
+  const normalizedInstance = instanceUrl.replace(/\/+$/, '');
+  const endpoint = `${normalizedInstance}/api/v4/projects/${projectId}/members/all?per_page=100`;
+
+  const response = await (globalThis as any).fetch(endpoint, {
+    headers: {
+      'PRIVATE-TOKEN': accessToken,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(`GitLab API failed with ${response.status}: ${message}`);
+  }
+
+  const members = (await response.json()) as GitLabMember[];
+  return Array.isArray(members) ? members : [];
+};
+
+const getOrCreateTeamForProject = async (projectId: string, teamName?: string) => {
+  const resolvedTeamName = teamName?.trim() || 'Core Team';
+
+  let team = await Team.findOne({
+    where: {
+      projectId,
+      name: resolvedTeamName,
+    },
+  });
+
+  if (!team) {
+    team = await Team.create({
+      projectId,
+      name: resolvedTeamName,
+      description: `Auto-created import team (${resolvedTeamName})`,
+    });
+  }
+
+  return team;
+};
+
+const upsertEmployeeFromImport = async (member: TeamImportMember, index: number) => {
+  const normalizedEmail = sanitizeEmail(member.email);
+  const firstName = member.firstName.trim();
+  const lastName = member.lastName.trim();
+
+  let employee = await Employee.findOne({ where: { email: normalizedEmail } });
+  if (employee) return employee;
+
+  let user = await User.findOne({ where: { email: normalizedEmail } });
+  if (!user) {
+    user = await User.create({
+      email: normalizedEmail,
+      role: 'employee',
+      displayName: `${firstName} ${lastName}`.trim(),
+      firebaseUid: `import-${Date.now()}-${index}`,
+      isActive: true,
+    });
+  }
+
+  employee = await Employee.create({
+    userId: user.id,
+    employeeCode: generateImportEmployeeCode(index),
+    firstName,
+    lastName,
+    email: normalizedEmail,
+    phone: null,
+    dateOfJoining: new Date(),
+    designation: member.designation?.trim() || 'Developer',
+    department: member.department?.trim() || 'Engineering',
+    reportingManagerId: null,
+    currentWorkload: 0,
+    maxCapacity: 40,
+    velocity: 10,
+    availability: 'available',
+    isActive: true,
+  });
+
+  return employee;
 };
 
 export const getAllProjects = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -549,5 +677,244 @@ export const getRoleCandidates = async (req: AuthRequest, res: Response): Promis
   } catch (error) {
     console.error('Get role candidates error:', error);
     res.status(500).json({ error: 'Failed to fetch role candidates' });
+  }
+};
+
+export const getGitLabProjectDevelopers = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { instanceUrl, accessToken, gitlabProjectId } = req.body as {
+      instanceUrl?: string;
+      accessToken?: string;
+      gitlabProjectId?: number;
+    };
+
+    if (!instanceUrl || !accessToken) {
+      res.status(400).json({ error: 'instanceUrl and accessToken are required' });
+      return;
+    }
+
+    const project = await Project.findByPk(id);
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    const resolvedGitLabProjectId = Number(gitlabProjectId || project.gitlabProjectId);
+    if (!resolvedGitLabProjectId || Number.isNaN(resolvedGitLabProjectId)) {
+      res.status(400).json({ error: 'Project is not linked with a GitLab project ID' });
+      return;
+    }
+
+    const members = await fetchGitLabMembers(instanceUrl, accessToken, resolvedGitLabProjectId);
+
+    const developers = members
+      .filter((member) => (member.access_level || 0) >= 30)
+      .map((member) => ({
+        gitlabUserId: member.id,
+        username: member.username,
+        name: member.name,
+        email: member.email || null,
+        accessLevel: member.access_level || null,
+        webUrl: member.web_url || null,
+      }));
+
+    await project.update({
+      gitlabProjectId: resolvedGitLabProjectId,
+    });
+
+    res.json({
+      projectId: id,
+      gitlabProjectId: resolvedGitLabProjectId,
+      developers,
+      total: developers.length,
+    });
+  } catch (error) {
+    console.error('Get GitLab developers error:', error);
+    res.status(500).json({ error: 'Failed to fetch GitLab developers' });
+  }
+};
+
+export const importProjectTeamMembers = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { teamName, members } = req.body as { teamName?: string; members?: TeamImportMember[] };
+
+    if (!Array.isArray(members) || members.length === 0) {
+      res.status(400).json({ error: 'members must be a non-empty array' });
+      return;
+    }
+
+    const project = await Project.findByPk(id);
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    const team = await getOrCreateTeamForProject(id, teamName);
+    const imported: any[] = [];
+    const skipped: any[] = [];
+
+    for (let i = 0; i < members.length; i += 1) {
+      const raw = members[i];
+
+      if (!raw || !raw.email || !raw.firstName || !raw.lastName) {
+        skipped.push({ index: i, reason: 'Missing required fields (firstName, lastName, email)' });
+        continue;
+      }
+
+      const employee = await upsertEmployeeFromImport(raw, i);
+
+      const exists = await TeamMember.findOne({
+        where: {
+          teamId: team.id,
+          employeeId: employee.id,
+        },
+      });
+
+      if (exists) {
+        skipped.push({ index: i, email: raw.email, reason: 'Already assigned to team' });
+        continue;
+      }
+
+      const member = await TeamMember.create({
+        teamId: team.id,
+        employeeId: employee.id,
+        role: raw.role?.trim() || 'developer',
+        allocationPercentage: raw.allocationPercentage ?? 100,
+      });
+
+      imported.push({
+        teamMemberId: member.id,
+        employeeId: employee.id,
+        email: employee.email,
+        name: `${employee.firstName} ${employee.lastName}`,
+      });
+    }
+
+    res.status(201).json({
+      message: 'Team members import completed',
+      projectId: id,
+      teamId: team.id,
+      importedCount: imported.length,
+      skippedCount: skipped.length,
+      imported,
+      skipped,
+    });
+  } catch (error) {
+    console.error('Import project team members error:', error);
+    res.status(500).json({ error: 'Failed to import team members' });
+  }
+};
+
+export const importProjectTeamFromGitLab = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { instanceUrl, accessToken, gitlabProjectId, teamName } = req.body as {
+      instanceUrl?: string;
+      accessToken?: string;
+      gitlabProjectId?: number;
+      teamName?: string;
+    };
+
+    if (!instanceUrl || !accessToken) {
+      res.status(400).json({ error: 'instanceUrl and accessToken are required' });
+      return;
+    }
+
+    const project = await Project.findByPk(id);
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    const resolvedGitLabProjectId = Number(gitlabProjectId || project.gitlabProjectId);
+    if (!resolvedGitLabProjectId || Number.isNaN(resolvedGitLabProjectId)) {
+      res.status(400).json({ error: 'Project is not linked with a GitLab project ID' });
+      return;
+    }
+
+    const gitlabMembers = await fetchGitLabMembers(instanceUrl, accessToken, resolvedGitLabProjectId);
+    const developers = gitlabMembers.filter((member) => (member.access_level || 0) >= 30);
+
+    const normalizedMembers = developers.map((member) => {
+        const name = parseName(member.name || member.username || 'Unknown User');
+        const resolvedEmail = member.email
+          ? sanitizeEmail(member.email)
+          : toSyntheticGitLabEmail(member.username || String(member.id), resolvedGitLabProjectId);
+
+        return {
+          firstName: name.firstName,
+          lastName: name.lastName,
+          email: resolvedEmail,
+          designation: 'Developer',
+          department: 'Engineering',
+          role: 'developer',
+          allocationPercentage: 100,
+          hasGitLabEmail: !!member.email,
+          gitlabUserId: member.id,
+          username: member.username,
+        };
+      });
+
+    const syntheticEmailUsers = normalizedMembers
+      .filter((member) => !member.hasGitLabEmail)
+      .map((member) => ({
+        gitlabUserId: member.gitlabUserId,
+        username: member.username,
+        syntheticEmail: member.email,
+      }));
+
+    const team = await getOrCreateTeamForProject(id, teamName);
+    const imported: any[] = [];
+    const skipped: any[] = [];
+
+    for (let i = 0; i < normalizedMembers.length; i += 1) {
+      const member = normalizedMembers[i];
+      const employee = await upsertEmployeeFromImport(member, i);
+
+      const exists = await TeamMember.findOne({
+        where: {
+          teamId: team.id,
+          employeeId: employee.id,
+        },
+      });
+
+      if (exists) {
+        skipped.push({ email: employee.email, reason: 'Already assigned to team' });
+        continue;
+      }
+
+      const created = await TeamMember.create({
+        teamId: team.id,
+        employeeId: employee.id,
+        role: 'developer',
+        allocationPercentage: 100,
+      });
+
+      imported.push({
+        teamMemberId: created.id,
+        employeeId: employee.id,
+        email: employee.email,
+      });
+    }
+
+    await project.update({ gitlabProjectId: resolvedGitLabProjectId });
+
+    res.status(201).json({
+      message: 'GitLab team import completed',
+      projectId: id,
+      gitlabProjectId: resolvedGitLabProjectId,
+      teamId: team.id,
+      importedCount: imported.length,
+      skippedCount: skipped.length,
+      syntheticEmailCount: syntheticEmailUsers.length,
+      syntheticEmailUsers,
+      imported,
+      skipped,
+    });
+  } catch (error) {
+    console.error('Import project team from GitLab error:', error);
+    res.status(500).json({ error: 'Failed to import project team from GitLab' });
   }
 };

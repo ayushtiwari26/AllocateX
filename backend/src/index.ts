@@ -14,6 +14,7 @@ import attendanceRoutes from './routes/attendance';
 import leaveRoutes from './routes/leave';
 import financeRoutes from './routes/finance';
 import allocationRoutes from './routes/allocation';
+import integrationRoutes from './routes/integrations';
 
 const app: Application = express();
 
@@ -48,6 +49,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leave', leaveRoutes);
 app.use('/api/finance', financeRoutes);
+app.use('/api/integrations', integrationRoutes);
 app.use('/api/allocation', allocationRoutes);
 
 // Error handlers (must be last)
@@ -84,12 +86,12 @@ const startServer = async () => {
       }
       process.exit(1);
     });
-    
+
     // Keep alive check
     server.on('close', () => {
-        console.log('Server closed');
+      console.log('Server closed');
     });
-    
+
   } catch (error) {
     console.error('Unable to start server:', error);
     process.exit(1);

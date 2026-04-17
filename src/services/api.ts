@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 // API Configuration - Handle different environments
 const getApiBaseUrl = () => {
   const configuredUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-  
+
   // On native Android, localhost refers to the device itself, not the host machine
   // Use 10.0.2.2 for Android emulator or configure your actual server IP
   if (Capacitor.isNativePlatform()) {
@@ -15,7 +15,7 @@ const getApiBaseUrl = () => {
       return configuredUrl.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
     }
   }
-  
+
   return configuredUrl;
 };
 
@@ -502,6 +502,60 @@ export const allocationApi = {
   getRecommendations: async (projectId: string) => {
     const response = await apiClient.get(`/allocation/recommendations/${projectId}`);
     return response.data;
+  },
+};
+
+// Integrations (Keka + GitLab)
+export interface GitlabProject {
+  id: number;
+  name: string;
+  name_with_namespace: string;
+  path_with_namespace: string;
+  description: string | null;
+  web_url: string;
+  default_branch: string | null;
+  visibility: string;
+  last_activity_at: string;
+  star_count?: number;
+  forks_count?: number;
+  open_issues_count?: number;
+  topics?: string[];
+  namespace?: { name: string; kind: string; full_path: string };
+}
+
+export interface KekaEmployeeRecord {
+  id: number;
+  displayName: string;
+  email: string;
+  employeeNumber: string;
+  profileImageUrl: string | null;
+  department: string;
+  jobtitle: string;
+  locationName: string;
+}
+
+export const integrationsApi = {
+  status: async () => {
+    const response = await apiClient.get('/integrations/status');
+    return response.data as { keka: { live: boolean }; gitlab: { live: boolean } };
+  },
+  getKekaEmployees: async () => {
+    const response = await apiClient.get('/integrations/keka/employees');
+    return response.data as { source: 'live' | 'snapshot'; count: number; employees: KekaEmployeeRecord[] };
+  },
+  syncKekaEmployees: async (wipe = true) => {
+    const response = await apiClient.post('/integrations/keka/sync', { wipe });
+    return response.data as {
+      ok: boolean;
+      employeesCreated: number;
+      teamsCreated: number;
+      gitlabProjectsCreated: number;
+      teamLeads: string[];
+    };
+  },
+  getGitlabProjects: async (search?: string) => {
+    const response = await apiClient.get('/integrations/gitlab/projects', { params: { search } });
+    return response.data as { source: 'live' | 'fallback'; count: number; projects: GitlabProject[] };
   },
 };
 

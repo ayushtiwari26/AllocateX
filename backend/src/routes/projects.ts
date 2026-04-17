@@ -13,6 +13,9 @@ import {
   updateTeamMember,
   removeTeamMember,
   getRoleCandidates,
+  getGitLabProjectDevelopers,
+  importProjectTeamMembers,
+  importProjectTeamFromGitLab,
 } from '../controllers/projectController';
 import { verifyFirebaseToken, requireRole } from '../middleware/auth';
 
@@ -36,5 +39,9 @@ router.patch('/:id/teams/:teamId/members/:memberId', requireRole('admin', 'manag
 router.delete('/:id/teams/:teamId/members/:memberId', requireRole('admin', 'manager', 'team_lead'), removeTeamMember);
 
 router.get('/:id/roles/:role/candidates', requireRole('admin', 'manager', 'team_lead'), getRoleCandidates);
+
+router.post('/:id/gitlab/developers', requireRole('admin', 'manager'), getGitLabProjectDevelopers);
+router.post('/:id/teams/import-members', requireRole('admin', 'manager'), importProjectTeamMembers);
+router.post('/:id/teams/import-gitlab', requireRole('admin', 'manager'), importProjectTeamFromGitLab);
 
 export default router;

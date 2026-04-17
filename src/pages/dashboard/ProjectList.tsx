@@ -1,12 +1,12 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { projectApi } from '@/services/api';
+import { projectApi, integrationsApi, GitlabProject } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Calendar, Users, FolderKanban, Clock, TrendingUp, ChevronRight, Sparkles, Target, AlertCircle, CheckCircle2, PauseCircle, Trash2, MoreVertical, Pencil } from 'lucide-react';
+import { Search, Plus, Calendar, Users, FolderKanban, Clock, TrendingUp, ChevronRight, Sparkles, Target, AlertCircle, CheckCircle2, PauseCircle, Trash2, MoreVertical, Pencil, GitBranch, ExternalLink, RefreshCw, Star, GitFork } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     Select,
@@ -41,6 +41,9 @@ interface Project {
     endDate?: string;
     priority: string;
     teams?: any[];
+    gitlabProjectId?: number | null;
+    gitlabProjectPath?: string | null;
+    gitlabWebUrl?: string | null;
 }
 
 export default function ProjectList() {
@@ -54,9 +57,13 @@ export default function ProjectList() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [gitlabProjects, setGitlabProjects] = useState<GitlabProject[]>([]);
+    const [gitlabSource, setGitlabSource] = useState<'live' | 'fallback' | null>(null);
+    const [gitlabLoading, setGitlabLoading] = useState(true);
 
     useEffect(() => {
         loadProjects();
+        loadGitlabProjects();
     }, []);
 
     const loadProjects = async () => {
@@ -70,9 +77,23 @@ export default function ProjectList() {
         }
     };
 
+    const loadGitlabProjects = async () => {
+        setGitlabLoading(true);
+        try {
+            const { projects: gl, source } = await integrationsApi.getGitlabProjects();
+            setGitlabProjects(gl);
+            setGitlabSource(source);
+        } catch (err) {
+            console.error('Error loading GitLab projects:', err);
+            setGitlabProjects([]);
+        } finally {
+            setGitlabLoading(false);
+        }
+    };
+
     const handleDeleteProject = async () => {
         if (!projectToDelete) return;
-        
+
         setDeleting(true);
         try {
             await projectApi.delete(projectToDelete.id);
@@ -105,7 +126,7 @@ export default function ProjectList() {
     }), [projects]);
 
     const getStatusConfig = (status: string) => {
-        switch(status) {
+        switch (status) {
             case 'active': return { icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' };
             case 'completed': return { icon: CheckCircle2, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' };
             case 'on-hold': return { icon: PauseCircle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
@@ -115,7 +136,7 @@ export default function ProjectList() {
     };
 
     const getPriorityConfig = (priority: string) => {
-        switch(priority) {
+        switch (priority) {
             case 'critical': return { color: 'text-rose-700', bg: 'bg-rose-100', ring: 'ring-rose-200' };
             case 'high': return { color: 'text-orange-700', bg: 'bg-orange-100', ring: 'ring-orange-200' };
             case 'medium': return { color: 'text-blue-700', bg: 'bg-blue-100', ring: 'ring-blue-200' };
@@ -244,6 +265,72 @@ export default function ProjectList() {
                     </div>
                 </div>
 
+                {/* GitLab Projects Panel */}
+                <div className="mb-6 sm:mb-8 bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 bg-gradient-to-r from-orange-50 to-rose-50">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-orange-500/15 rounded-lg">
+                                <GitBranch className="w-5 h-5 text-orange-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-slate-900 text-sm sm:text-base">GitLab Projects</h3>
+                                <p className="text-xs text-slate-500">
+                                    {gitlabSource === 'live' ? 'Synced from your GitLab instance' : 'Demo fallback · configure GITLAB_TOKEN to go live'}
+                                    {' · '}{gitlabProjects.length} repos
+                                </p>
+                            </div>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={loadGitlabProjects} disabled={gitlabLoading} className="gap-1.5">
+                            <RefreshCw className={`w-3.5 h-3.5 ${gitlabLoading ? 'animate-spin' : ''}`} /> Refresh
+                        </Button>
+                    </div>
+                    <div className="p-3 sm:p-4">
+                        {gitlabLoading ? (
+                            <div className="flex items-center justify-center py-6 text-sm text-slate-500">
+                                <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Fetching from GitLab…
+                            </div>
+                        ) : gitlabProjects.length === 0 ? (
+                            <div className="text-center py-6 text-sm text-slate-500">No GitLab projects available.</div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {gitlabProjects.map(p => (
+                                    <a
+                                        key={p.id}
+                                        href={p.web_url}
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                        className="group block p-3 sm:p-4 rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-md transition-all bg-white"
+                                    >
+                                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center flex-shrink-0">
+                                                    <GitBranch className="w-4 h-4" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-semibold text-slate-900 text-sm truncate">{p.name}</p>
+                                                    <p className="text-[11px] text-slate-500 truncate">{p.path_with_namespace}</p>
+                                                </div>
+                                            </div>
+                                            <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-orange-600 flex-shrink-0" />
+                                        </div>
+                                        {p.description && (
+                                            <p className="text-xs text-slate-600 line-clamp-2 mb-2">{p.description}</p>
+                                        )}
+                                        <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                                            <span className="flex items-center gap-1"><Star className="w-3 h-3" />{p.star_count ?? 0}</span>
+                                            <span className="flex items-center gap-1"><GitFork className="w-3 h-3" />{p.forks_count ?? 0}</span>
+                                            <span className="flex items-center gap-1"><AlertCircle className="w-3 h-3" />{p.open_issues_count ?? 0}</span>
+                                            {p.default_branch && (
+                                                <Badge variant="outline" className="h-4 px-1.5 text-[10px] font-normal">{p.default_branch}</Badge>
+                                            )}
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Results Header */}
                 <div className="flex items-center justify-between mb-4 sm:mb-5">
                     <p className="text-xs sm:text-sm text-slate-500">
@@ -267,8 +354,8 @@ export default function ProjectList() {
                         const memberCount = proj.teams?.reduce((acc, team) => acc + (team.members?.length || 0), 0) || 0;
 
                         return (
-                            <Card 
-                                key={proj.id} 
+                            <Card
+                                key={proj.id}
                                 className="group bg-white hover:shadow-xl transition-all duration-300 border-slate-200/60 hover:border-violet-300 rounded-2xl overflow-hidden"
                             >
                                 <CardContent className="p-6">
@@ -281,7 +368,21 @@ export default function ProjectList() {
                                                 <h3 className="font-bold text-slate-900 group-hover:text-violet-600 transition-colors truncate">
                                                     {proj.name}
                                                 </h3>
-                                                <p className="text-xs text-slate-500 capitalize">{proj.status}</p>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <p className="text-xs text-slate-500 capitalize">{proj.status}</p>
+                                                    {proj.gitlabWebUrl && (
+                                                        <a
+                                                            href={proj.gitlabWebUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer noopener"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
+                                                            title={proj.gitlabProjectPath ?? 'GitLab project'}
+                                                        >
+                                                            <GitBranch className="w-3 h-3" /> GitLab
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                         <DropdownMenu>
@@ -299,7 +400,7 @@ export default function ProjectList() {
                                                     <Pencil className="w-4 h-4 mr-2" />
                                                     Edit Project
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem 
+                                                <DropdownMenuItem
                                                     onClick={() => {
                                                         setProjectToDelete(proj);
                                                         setDeleteDialogOpen(true);
@@ -372,13 +473,13 @@ export default function ProjectList() {
                             Delete Project
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete <strong>{projectToDelete?.name}</strong>? 
+                            Are you sure you want to delete <strong>{projectToDelete?.name}</strong>?
                             This action cannot be undone and will remove all associated teams and allocations.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                             onClick={handleDeleteProject}
                             disabled={deleting}
                             className="bg-red-600 hover:bg-red-700 text-white"

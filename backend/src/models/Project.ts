@@ -11,11 +11,14 @@ export interface ProjectAttributes {
   managerId: string;
   requirements: string | null;
   priority: 'low' | 'medium' | 'high' | 'critical';
+  gitlabProjectId: number | null;
+  gitlabProjectPath: string | null;
+  gitlabWebUrl: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export type ProjectCreationAttributes = Optional<ProjectAttributes, 'id' | 'description' | 'status' | 'endDate' | 'requirements' | 'priority' | 'createdAt' | 'updatedAt'>;
+export type ProjectCreationAttributes = Optional<ProjectAttributes, 'id' | 'description' | 'status' | 'endDate' | 'requirements' | 'priority' | 'gitlabProjectId' | 'gitlabProjectPath' | 'gitlabWebUrl' | 'createdAt' | 'updatedAt'>;
 
 class Project extends Model<ProjectAttributes, ProjectCreationAttributes> implements ProjectAttributes {
   public id!: string;
@@ -27,6 +30,9 @@ class Project extends Model<ProjectAttributes, ProjectCreationAttributes> implem
   public managerId!: string;
   public requirements!: string | null;
   public priority!: 'low' | 'medium' | 'high' | 'critical';
+  public gitlabProjectId!: number | null;
+  public gitlabProjectPath!: string | null;
+  public gitlabWebUrl!: string | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -72,6 +78,21 @@ Project.init(
     priority: {
       type: DataTypes.ENUM('low', 'medium', 'high', 'critical'),
       defaultValue: 'medium',
+    },
+    gitlabProjectId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      field: 'gitlab_project_id',
+    },
+    gitlabProjectPath: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'gitlab_project_path',
+    },
+    gitlabWebUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'gitlab_web_url',
     },
   },
   {

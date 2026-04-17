@@ -1,14 +1,14 @@
 /**
  * Organization Page
- * Displays the company hierarchy with drag-and-drop team management
+ * Interactive org graph (React Flow + dagre auto-layout).
  */
 
-import OrganizationGraph from '@/components/organization/OrganizationGraph';
+import OrgFlowChart from '@/components/organization/OrgFlowChart';
 
 export default function OrganizationPage() {
     return (
         <div className="h-full">
-            <OrganizationGraph />
+            <OrgFlowChart />
         </div>
     );
 }

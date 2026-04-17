@@ -32,6 +32,20 @@ export const getAllEmployees = async (req: AuthRequest, res: Response): Promise<
         { model: User, as: 'user', attributes: ['email', 'displayName', 'role'] },
         { model: EmployeeSkill, as: 'skills' },
         { model: LeaveBalance, as: 'leaveBalance' },
+        {
+          model: TeamMember,
+          as: 'teamMemberships',
+          where: { isActive: true },
+          required: false,
+          include: [
+            {
+              model: Team,
+              as: 'team',
+              attributes: ['id', 'name', 'projectId'],
+              include: [{ model: Project, as: 'project', attributes: ['id', 'name', 'status', 'priority'] }],
+            },
+          ],
+        },
       ],
       order: [['createdAt', 'DESC']],
     });
